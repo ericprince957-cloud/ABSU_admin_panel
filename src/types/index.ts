@@ -1,62 +1,51 @@
-// Shared data contract - must match marketplace app exactly
+// Database types matching actual Supabase schema
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  role: 'student' | 'seller' | 'admin';
-  status: 'pending' | 'verified' | 'banned';
+  phone?: string;
+  role?: string;
+  status?: string;
   avatar?: string;
-  createdAt: string;
-  updatedAt: string;
   whatsapp?: string;
   bio?: string;
-  storeName?: string;
+  store_name?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface Product {
   id: string;
-  sellerId: string;
-  sellerName: string;
-  title: string;
-  description: string;
+  seller_id?: string;
+  name: string;
+  description?: string;
   price: number;
-  category: string;
-  images: string[];
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-  updatedAt: string;
+  category?: string;
+  image_url?: string;
+  is_active: boolean;
   stock: number;
-  condition: 'new' | 'used' | 'refurbished';
+  created_at: string;
+  updated_at?: string;
 }
 
-export interface Order {
+export interface Inquiry {
   id: string;
-  buyerId: string;
-  buyerName: string;
-  sellerId: string;
-  sellerName: string;
-  productId: string;
-  productTitle: string;
-  quantity: number;
-  totalPrice: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
-  paymentMethod: 'whatsapp' | 'cash' | 'bank_transfer';
-  createdAt: string;
-  updatedAt: string;
-  notes?: string;
+  user_id: string;
+  product_id: string;
+  message: string;
+  status: 'new' | 'replied' | 'resolved';
+  created_at: string;
+  updated_at?: string;
+  // Joined data
+  users?: { name: string; email: string };
+  products?: { name: string; price: number };
 }
 
 export interface DashboardStats {
-  totalUsers: number;
-  totalSellers: number;
-  totalProducts: number;
-  totalOrders: number;
-  pendingSellers: number;
-  pendingProducts: number;
-  revenue: number;
-  activeOrders: number;
+  users: number;
+  products: number;
+  inquiries: number;
 }
 
-export type Page = 'dashboard' | 'sellers' | 'products' | 'orders' | 'settings';
+export type Page = 'dashboard' | 'users' | 'products' | 'inquiries' | 'settings';

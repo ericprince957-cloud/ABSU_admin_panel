@@ -1,12 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Replace these with your actual Supabase credentials
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL_HERE';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY_HERE';
+// Vite uses import.meta.env instead of process.env
+// Variables must be prefixed with VITE_ to be exposed to the client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Validate that environment variables are set
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn(
+    '⚠️ Supabase credentials not found. Please create a .env file with:\n' +
+    'VITE_SUPABASE_URL=your-project-url\n' +
+    'VITE_SUPABASE_ANON_KEY=your-anon-key'
+  );
+}
 
-// Check if Supabase is configured
-export const isSupabaseConfigured = () => {
-  return supabaseUrl !== 'YOUR_SUPABASE_URL_HERE' && supabaseAnonKey !== 'YOUR_SUPABASE_ANON_KEY_HERE';
+export const supabase = createClient(
+  supabaseUrl || '',
+  supabaseAnonKey || ''
+);
+
+// Check if Supabase is properly configured
+export const isSupabaseConfigured = (): boolean => {
+  return Boolean(supabaseUrl && supabaseAnonKey);
 };
