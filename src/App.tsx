@@ -5,11 +5,15 @@ import SellersPage from './pages/Sellers';
 import ProductsPage from './pages/Products';
 import OrdersPage from './pages/Orders';
 import SettingsPage from './pages/Settings';
+import LoginScreen from './components/LoginScreen';
 import { Page, User, Product, Order, DashboardStats } from './types';
 import { getUsers, getProducts, getOrders, getDashboardStats, updateUser, deleteUser, updateProduct, deleteProduct, updateOrder, deleteOrder, addUser, addProduct } from './lib/db';
 import { isSupabaseConfigured } from './lib/supabase';
 
+const ADMIN_PASSWORD = 'eric123$';
+
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -25,6 +29,24 @@ export default function App() {
     activeOrders: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  // Check authentication on mount
+  useEffect(() => {
+    // Check URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlPassword = urlParams.get('password');
+    
+    if (urlPassword === ADMIN_PASSWORD) {
+      // Valid password in URL - authenticate and clean URL
+      sessionStorage.setItem('admin_authenticated', 'true');
+      setIsAuthenticated(true);
+      // Remove password from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (sessionStorage.getItem('admin_authenticated') === 'true') {
+      // Already authenticated in this session
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
@@ -137,6 +159,11 @@ export default function App() {
         return <Dashboard stats={stats} users={users} products={products} orders={orders} />;
     }
   };
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
+  }
 
   if (loading) {
     return (
