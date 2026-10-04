@@ -1,19 +1,15 @@
-// Site configuration - shared with marketplace
+// Site configuration
 export const config = {
-  siteName: 'CampusMarket',
-  siteTagline: 'Student Marketplace',
   currency: '₦',
   currencyCode: 'NGN',
-  whatsappCheckout: true,
-  platformOwnerWhatsApp: '+2348012345678',
   dataVersion: '1.0.0',
 };
 
-// LocalStorage keys - MUST match marketplace exactly
+// LocalStorage keys
 export const STORAGE_KEYS = {
-  USERS: 'campusmarket_users',
-  PRODUCTS: 'campusmarket_products',
-  ORDERS: 'campusmarket_orders',
-  DATA_VERSION: 'campusmarket_data_version',
-  INITIALIZED: 'campusmarket_initialized',
+  USERS: 'admin_users',
+  PRODUCTS: 'admin_products',
+  ORDERS: 'admin_orders',
+  DATA_VERSION: 'admin_data_version',
+  INITIALIZED: 'admin_initialized',
 };
