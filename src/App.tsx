@@ -71,16 +71,20 @@ export default function App() {
         return (
           <SellersPage
             sellers={sellers}
+            allUsers={users}
             onUpdateSeller={handleUpdateSeller}
             onDeleteSeller={handleDeleteSeller}
+            onRefresh={refreshData}
           />
         );
       case 'products':
         return (
           <ProductsPage
             products={products}
+            sellers={sellers}
             onUpdateProduct={handleUpdateProduct}
             onDeleteProduct={handleDeleteProduct}
+            onRefresh={refreshData}
           />
         );
       case 'orders':

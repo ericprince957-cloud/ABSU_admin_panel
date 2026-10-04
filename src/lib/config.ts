@@ -2,9 +2,10 @@
 export const config = {
   siteName: 'CampusMarket',
   siteTagline: 'Student Marketplace',
-  currency: '₹',
+  currency: '₦',
+  currencyCode: 'NGN',
   whatsappCheckout: true,
-  platformOwnerWhatsApp: '+919876543210',
+  platformOwnerWhatsApp: '+2348012345678',
   dataVersion: '1.0.0',
 };
 
