@@ -16,18 +16,18 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { User } from '../types';
-import { addUser } from '../lib/db';
 import { format } from 'date-fns';
 
 interface SellersPageProps {
   sellers: User[];
   allUsers: User[];
-  onUpdateSeller: (id: string, updates: Partial<User>) => void;
-  onDeleteSeller: (id: string) => void;
-  onRefresh: () => void;
+  onUpdateSeller: (id: string, updates: Partial<User>) => Promise<void>;
+  onDeleteSeller: (id: string) => Promise<void>;
+  onAddUser: (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onRefresh: () => Promise<void>;
 }
 
-export default function SellersPage({ sellers, allUsers, onUpdateSeller, onDeleteSeller, onRefresh }: SellersPageProps) {
+export default function SellersPage({ sellers, allUsers, onUpdateSeller, onDeleteSeller, onAddUser, onRefresh }: SellersPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingSeller, setEditingSeller] = useState<User | null>(null);
@@ -92,23 +92,18 @@ export default function SellersPage({ sellers, allUsers, onUpdateSeller, onDelet
     setDeleteConfirm(null);
   };
 
-  const handleAddUser = (userData: Partial<User>) => {
-    const now = new Date().toISOString();
-    const newUser: User = {
-      id: `user-${Date.now()}`,
+  const handleAddUser = async (userData: Partial<User>) => {
+    const newUser: Omit<User, 'id' | 'createdAt' | 'updatedAt'> = {
       name: userData.name || '',
       email: userData.email || '',
       phone: userData.phone || '',
       whatsapp: userData.whatsapp || userData.phone || '',
       role: (userData.role as 'student' | 'seller') || 'seller',
       status: 'pending',
-      createdAt: now,
-      updatedAt: now,
       bio: userData.bio || '',
       storeName: userData.storeName || '',
     };
-    addUser(newUser);
-    onRefresh();
+    await onAddUser(newUser);
     setShowAddModal(false);
   };
 

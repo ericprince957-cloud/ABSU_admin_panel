@@ -6,24 +6,23 @@ import {
   CheckCircle,
   AlertTriangle,
 } from 'lucide-react';
-import { resetData } from '../lib/db';
 import { config, STORAGE_KEYS } from '../lib/config';
 
 interface SettingsPageProps {
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
+  onClearAll: () => Promise<void>;
 }
 
-export default function SettingsPage({ onRefresh }: SettingsPageProps) {
+export default function SettingsPage({ onRefresh, onClearAll }: SettingsPageProps) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
 
-  const handleReset = () => {
-    resetData();
+  const handleReset = async () => {
+    await onClearAll();
     setShowResetConfirm(false);
     setResetSuccess(true);
     setTimeout(() => {
       setResetSuccess(false);
-      onRefresh();
     }, 1500);
   };
 

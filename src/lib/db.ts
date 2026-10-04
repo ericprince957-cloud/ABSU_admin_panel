@@ -1,121 +1,368 @@
 import { User, Product, Order, DashboardStats } from '../types';
-import { STORAGE_KEYS } from './config';
+import { supabase, isSupabaseConfigured } from './supabase';
 
-// Initialize data in localStorage if not already present (starts empty)
-export function initializeData(): void {
-  const initialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
-  if (!initialized) {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([]));
-    localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+// Check if Supabase is configured
+const useSupabase = isSupabaseConfigured();
+
+// ============================================
+// USERS
+// ============================================
+
+export async function getUsers(): Promise<User[]> {
+  if (!useSupabase) {
+    console.warn('Supabase not configured. Using empty data.');
+    return [];
   }
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+
+  return (data || []).map(mapDbUserToUser);
 }
 
-// ---- USERS ----
-export function getUsers(): User[] {
-  const data = localStorage.getItem(STORAGE_KEYS.USERS);
-  return data ? JSON.parse(data) : [];
+export async function getUserById(id: string): Promise<User | null> {
+  if (!useSupabase) return null;
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching user:', error);
+    return null;
+  }
+
+  return data ? mapDbUserToUser(data) : null;
 }
 
-export function getUserById(id: string): User | undefined {
-  return getUsers().find(u => u.id === id);
+export async function addUser(user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User | null> {
+  if (!useSupabase) return null;
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert([{
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      status: user.status,
+      avatar: user.avatar,
+      whatsapp: user.whatsapp,
+      bio: user.bio,
+      store_name: user.storeName,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding user:', error);
+    return null;
+  }
+
+  return data ? mapDbUserToUser(data) : null;
 }
 
-export function updateUser(id: string, updates: Partial<User>): User | undefined {
-  const users = getUsers();
-  const index = users.findIndex(u => u.id === id);
-  if (index === -1) return undefined;
-  users[index] = { ...users[index], ...updates, updatedAt: new Date().toISOString() };
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-  return users[index];
+export async function updateUser(id: string, updates: Partial<User>): Promise<User | null> {
+  if (!useSupabase) return null;
+
+  const dbUpdates: any = {};
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+  if (updates.email !== undefined) dbUpdates.email = updates.email;
+  if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+  if (updates.role !== undefined) dbUpdates.role = updates.role;
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.avatar !== undefined) dbUpdates.avatar = updates.avatar;
+  if (updates.whatsapp !== undefined) dbUpdates.whatsapp = updates.whatsapp;
+  if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
+  if (updates.storeName !== undefined) dbUpdates.store_name = updates.storeName;
+
+  const { data, error } = await supabase
+    .from('users')
+    .update(dbUpdates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating user:', error);
+    return null;
+  }
+
+  return data ? mapDbUserToUser(data) : null;
 }
 
-export function deleteUser(id: string): boolean {
-  const users = getUsers();
-  const filtered = users.filter(u => u.id !== id);
-  if (filtered.length === users.length) return false;
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(filtered));
+export async function deleteUser(id: string): Promise<boolean> {
+  if (!useSupabase) return false;
+
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting user:', error);
+    return false;
+  }
+
   return true;
 }
 
-export function addUser(user: User): void {
-  const users = getUsers();
-  users.push(user);
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+// ============================================
+// PRODUCTS
+// ============================================
+
+export async function getProducts(): Promise<Product[]> {
+  if (!useSupabase) return [];
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+
+  return (data || []).map(mapDbProductToProduct);
 }
 
-// ---- PRODUCTS ----
-export function getProducts(): Product[] {
-  const data = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-  return data ? JSON.parse(data) : [];
+export async function getProductById(id: string): Promise<Product | null> {
+  if (!useSupabase) return null;
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching product:', error);
+    return null;
+  }
+
+  return data ? mapDbProductToProduct(data) : null;
 }
 
-export function getProductById(id: string): Product | undefined {
-  return getProducts().find(p => p.id === id);
+export async function addProduct(product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product | null> {
+  if (!useSupabase) return null;
+
+  const { data, error } = await supabase
+    .from('products')
+    .insert([{
+      seller_id: product.sellerId,
+      seller_name: product.sellerName,
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      category: product.category,
+      images: product.images,
+      status: product.status,
+      stock: product.stock,
+      condition: product.condition,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding product:', error);
+    return null;
+  }
+
+  return data ? mapDbProductToProduct(data) : null;
 }
 
-export function updateProduct(id: string, updates: Partial<Product>): Product | undefined {
-  const products = getProducts();
-  const index = products.findIndex(p => p.id === id);
-  if (index === -1) return undefined;
-  products[index] = { ...products[index], ...updates, updatedAt: new Date().toISOString() };
-  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-  return products[index];
+export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
+  if (!useSupabase) return null;
+
+  const dbUpdates: any = {};
+  if (updates.sellerId !== undefined) dbUpdates.seller_id = updates.sellerId;
+  if (updates.sellerName !== undefined) dbUpdates.seller_name = updates.sellerName;
+  if (updates.title !== undefined) dbUpdates.title = updates.title;
+  if (updates.description !== undefined) dbUpdates.description = updates.description;
+  if (updates.price !== undefined) dbUpdates.price = updates.price;
+  if (updates.category !== undefined) dbUpdates.category = updates.category;
+  if (updates.images !== undefined) dbUpdates.images = updates.images;
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.stock !== undefined) dbUpdates.stock = updates.stock;
+  if (updates.condition !== undefined) dbUpdates.condition = updates.condition;
+
+  const { data, error } = await supabase
+    .from('products')
+    .update(dbUpdates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating product:', error);
+    return null;
+  }
+
+  return data ? mapDbProductToProduct(data) : null;
 }
 
-export function deleteProduct(id: string): boolean {
-  const products = getProducts();
-  const filtered = products.filter(p => p.id !== id);
-  if (filtered.length === products.length) return false;
-  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(filtered));
+export async function deleteProduct(id: string): Promise<boolean> {
+  if (!useSupabase) return false;
+
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting product:', error);
+    return false;
+  }
+
   return true;
 }
 
-export function addProduct(product: Product): void {
-  const products = getProducts();
-  products.push(product);
-  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+// ============================================
+// ORDERS
+// ============================================
+
+export async function getOrders(): Promise<Order[]> {
+  if (!useSupabase) return [];
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching orders:', error);
+    return [];
+  }
+
+  return (data || []).map(mapDbOrderToOrder);
 }
 
-// ---- ORDERS ----
-export function getOrders(): Order[] {
-  const data = localStorage.getItem(STORAGE_KEYS.ORDERS);
-  return data ? JSON.parse(data) : [];
+export async function getOrderById(id: string): Promise<Order | null> {
+  if (!useSupabase) return null;
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching order:', error);
+    return null;
+  }
+
+  return data ? mapDbOrderToOrder(data) : null;
 }
 
-export function getOrderById(id: string): Order | undefined {
-  return getOrders().find(o => o.id === id);
+export async function addOrder(order: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order | null> {
+  if (!useSupabase) return null;
+
+  const { data, error } = await supabase
+    .from('orders')
+    .insert([{
+      buyer_id: order.buyerId,
+      buyer_name: order.buyerName,
+      seller_id: order.sellerId,
+      seller_name: order.sellerName,
+      product_id: order.productId,
+      product_title: order.productTitle,
+      quantity: order.quantity,
+      total_price: order.totalPrice,
+      status: order.status,
+      payment_method: order.paymentMethod,
+      notes: order.notes,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding order:', error);
+    return null;
+  }
+
+  return data ? mapDbOrderToOrder(data) : null;
 }
 
-export function updateOrder(id: string, updates: Partial<Order>): Order | undefined {
-  const orders = getOrders();
-  const index = orders.findIndex(o => o.id === id);
-  if (index === -1) return undefined;
-  orders[index] = { ...orders[index], ...updates, updatedAt: new Date().toISOString() };
-  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-  return orders[index];
+export async function updateOrder(id: string, updates: Partial<Order>): Promise<Order | null> {
+  if (!useSupabase) return null;
+
+  const dbUpdates: any = {};
+  if (updates.buyerId !== undefined) dbUpdates.buyer_id = updates.buyerId;
+  if (updates.buyerName !== undefined) dbUpdates.buyer_name = updates.buyerName;
+  if (updates.sellerId !== undefined) dbUpdates.seller_id = updates.sellerId;
+  if (updates.sellerName !== undefined) dbUpdates.seller_name = updates.sellerName;
+  if (updates.productId !== undefined) dbUpdates.product_id = updates.productId;
+  if (updates.productTitle !== undefined) dbUpdates.product_title = updates.productTitle;
+  if (updates.quantity !== undefined) dbUpdates.quantity = updates.quantity;
+  if (updates.totalPrice !== undefined) dbUpdates.total_price = updates.totalPrice;
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.paymentMethod !== undefined) dbUpdates.payment_method = updates.paymentMethod;
+  if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+
+  const { data, error } = await supabase
+    .from('orders')
+    .update(dbUpdates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating order:', error);
+    return null;
+  }
+
+  return data ? mapDbOrderToOrder(data) : null;
 }
 
-export function deleteOrder(id: string): boolean {
-  const orders = getOrders();
-  const filtered = orders.filter(o => o.id !== id);
-  if (filtered.length === orders.length) return false;
-  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(filtered));
+export async function deleteOrder(id: string): Promise<boolean> {
+  if (!useSupabase) return false;
+
+  const { error } = await supabase
+    .from('orders')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting order:', error);
+    return false;
+  }
+
   return true;
 }
 
-export function addOrder(order: Order): void {
-  const orders = getOrders();
-  orders.push(order);
-  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-}
+// ============================================
+// DASHBOARD STATS
+// ============================================
 
-// ---- DASHBOARD STATS ----
-export function getDashboardStats(): DashboardStats {
-  const users = getUsers();
-  const products = getProducts();
-  const orders = getOrders();
+export async function getDashboardStats(): Promise<DashboardStats> {
+  if (!useSupabase) {
+    return {
+      totalUsers: 0,
+      totalSellers: 0,
+      totalProducts: 0,
+      totalOrders: 0,
+      pendingSellers: 0,
+      pendingProducts: 0,
+      revenue: 0,
+      activeOrders: 0,
+    };
+  }
+
+  const [users, products, orders] = await Promise.all([
+    getUsers(),
+    getProducts(),
+    getOrders(),
+  ]);
 
   const sellers = users.filter(u => u.role === 'seller');
   const pendingSellers = sellers.filter(s => s.status === 'pending');
@@ -137,19 +384,60 @@ export function getDashboardStats(): DashboardStats {
   };
 }
 
-// ---- RESET DATA ----
-export function resetData(): void {
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([]));
-  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([]));
-  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([]));
-  localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+// ============================================
+// HELPER FUNCTIONS - Map DB to App Types
+// ============================================
+
+function mapDbUserToUser(dbUser: any): User {
+  return {
+    id: dbUser.id,
+    name: dbUser.name,
+    email: dbUser.email,
+    phone: dbUser.phone,
+    role: dbUser.role as User['role'],
+    status: dbUser.status as User['status'],
+    avatar: dbUser.avatar,
+    whatsapp: dbUser.whatsapp,
+    bio: dbUser.bio,
+    storeName: dbUser.store_name,
+    createdAt: dbUser.created_at,
+    updatedAt: dbUser.updated_at,
+  };
 }
 
-// ---- CLEAR ALL DATA ----
-export function clearAllData(): void {
-  localStorage.removeItem(STORAGE_KEYS.USERS);
-  localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
-  localStorage.removeItem(STORAGE_KEYS.ORDERS);
-  localStorage.removeItem(STORAGE_KEYS.INITIALIZED);
-  localStorage.removeItem(STORAGE_KEYS.DATA_VERSION);
+function mapDbProductToProduct(dbProduct: any): Product {
+  return {
+    id: dbProduct.id,
+    sellerId: dbProduct.seller_id,
+    sellerName: dbProduct.seller_name,
+    title: dbProduct.title,
+    description: dbProduct.description,
+    price: dbProduct.price,
+    category: dbProduct.category,
+    images: dbProduct.images || [],
+    status: dbProduct.status as Product['status'],
+    stock: dbProduct.stock,
+    condition: dbProduct.condition as Product['condition'],
+    createdAt: dbProduct.created_at,
+    updatedAt: dbProduct.updated_at,
+  };
+}
+
+function mapDbOrderToOrder(dbOrder: any): Order {
+  return {
+    id: dbOrder.id,
+    buyerId: dbOrder.buyer_id,
+    buyerName: dbOrder.buyer_name,
+    sellerId: dbOrder.seller_id,
+    sellerName: dbOrder.seller_name,
+    productId: dbOrder.product_id,
+    productTitle: dbOrder.product_title,
+    quantity: dbOrder.quantity,
+    totalPrice: dbOrder.total_price,
+    status: dbOrder.status as Order['status'],
+    paymentMethod: dbOrder.payment_method as Order['paymentMethod'],
+    notes: dbOrder.notes,
+    createdAt: dbOrder.created_at,
+    updatedAt: dbOrder.updated_at,
+  };
 }
