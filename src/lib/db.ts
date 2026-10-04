@@ -1,14 +1,13 @@
 import { User, Product, Order, DashboardStats } from '../types';
 import { STORAGE_KEYS } from './config';
-import { seedUsers, seedProducts, seedOrders } from '../data/seed';
 
-// Initialize data in localStorage if not already present
+// Initialize data in localStorage if not already present (starts empty)
 export function initializeData(): void {
   const initialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
   if (!initialized) {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(seedUsers));
-    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(seedProducts));
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(seedOrders));
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([]));
     localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
   }
 }
@@ -106,6 +105,12 @@ export function deleteOrder(id: string): boolean {
   return true;
 }
 
+export function addOrder(order: Order): void {
+  const orders = getOrders();
+  orders.push(order);
+  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+}
+
 // ---- DASHBOARD STATS ----
 export function getDashboardStats(): DashboardStats {
   const users = getUsers();
@@ -134,8 +139,17 @@ export function getDashboardStats(): DashboardStats {
 
 // ---- RESET DATA ----
 export function resetData(): void {
-  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(seedUsers));
-  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(seedProducts));
-  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(seedOrders));
+  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify([]));
+  localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify([]));
   localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+}
+
+// ---- CLEAR ALL DATA ----
+export function clearAllData(): void {
+  localStorage.removeItem(STORAGE_KEYS.USERS);
+  localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+  localStorage.removeItem(STORAGE_KEYS.ORDERS);
+  localStorage.removeItem(STORAGE_KEYS.INITIALIZED);
+  localStorage.removeItem(STORAGE_KEYS.DATA_VERSION);
 }

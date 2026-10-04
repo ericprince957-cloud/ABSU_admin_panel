@@ -2,13 +2,15 @@ import {
   Users,
   Package,
   ShoppingCart,
-  IndianRupee,
+  TrendingUp,
   Clock,
   CheckCircle,
   AlertTriangle,
-  TrendingUp,
+  UserPlus,
+  PackagePlus,
 } from 'lucide-react';
 import { DashboardStats, User, Product, Order } from '../types';
+import { config } from '../lib/config';
 import { format } from 'date-fns';
 
 interface DashboardProps {
@@ -26,12 +28,13 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
   const pendingSellers = users.filter(u => u.role === 'seller' && u.status === 'pending');
   const pendingProducts = products.filter(p => p.status === 'pending');
 
+  const isEmpty = users.length === 0 && products.length === 0 && orders.length === 0;
+
   const statCards = [
     {
       title: 'Total Users',
       value: stats.totalUsers,
       icon: Users,
-      color: 'bg-blue-500',
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-600',
     },
@@ -39,7 +42,6 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
       title: 'Total Sellers',
       value: stats.totalSellers,
       icon: CheckCircle,
-      color: 'bg-green-500',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600',
     },
@@ -47,7 +49,6 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
       title: 'Total Products',
       value: stats.totalProducts,
       icon: Package,
-      color: 'bg-purple-500',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600',
     },
@@ -55,15 +56,13 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
       title: 'Total Orders',
       value: stats.totalOrders,
       icon: ShoppingCart,
-      color: 'bg-orange-500',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-600',
     },
     {
       title: 'Revenue',
-      value: `₹${stats.revenue.toLocaleString()}`,
-      icon: IndianRupee,
-      color: 'bg-emerald-500',
+      value: `${config.currency}${stats.revenue.toLocaleString()}`,
+      icon: TrendingUp,
       bgColor: 'bg-emerald-50',
       textColor: 'text-emerald-600',
     },
@@ -71,7 +70,6 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
       title: 'Active Orders',
       value: stats.activeOrders,
       icon: TrendingUp,
-      color: 'bg-cyan-500',
       bgColor: 'bg-cyan-50',
       textColor: 'text-cyan-600',
     },
@@ -79,7 +77,6 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
       title: 'Pending Sellers',
       value: stats.pendingSellers,
       icon: AlertTriangle,
-      color: 'bg-amber-500',
       bgColor: 'bg-amber-50',
       textColor: 'text-amber-600',
     },
@@ -87,7 +84,6 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
       title: 'Pending Products',
       value: stats.pendingProducts,
       icon: Clock,
-      color: 'bg-rose-500',
       bgColor: 'bg-rose-50',
       textColor: 'text-rose-600',
     },
@@ -104,6 +100,63 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
     };
     return styles[status] || 'bg-gray-100 text-gray-800';
   };
+
+  if (isEmpty) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500 mt-1">Welcome to {config.siteName} Admin Panel</p>
+        </div>
+
+        {/* Empty State */}
+        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+          <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserPlus className="w-10 h-10 text-orange-500" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Let's get started!</h2>
+          <p className="text-gray-500 max-w-md mx-auto mb-6">
+            Your admin panel is ready. Start by adding people (sellers and students) to your marketplace.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+              <span className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+              Add sellers & students from People page
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+              <span className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+              Verify sellers to activate them
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+              <span className="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+              <PackagePlus className="w-4 h-4" />
+              Add products for verified sellers
+            </div>
+          </div>
+        </div>
+
+        {/* Stats (all zeros) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statCards.map((card) => (
+            <div
+              key={card.title}
+              className="bg-white rounded-xl border border-gray-200 p-5"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">{card.title}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
+                </div>
+                <div className={`w-12 h-12 ${card.bgColor} rounded-xl flex items-center justify-center`}>
+                  <card.icon className={`w-6 h-6 ${card.textColor}`} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -200,7 +253,7 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">₹{order.totalPrice}</p>
+                    <p className="text-sm font-semibold text-gray-900">{config.currency}{order.totalPrice.toLocaleString()}</p>
                     <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${getStatusBadge(order.status)}`}>
                       {order.status}
                     </span>
@@ -213,24 +266,26 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
       </div>
 
       {/* Quick Activity */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-        <div className="space-y-3">
-          {getRecentActivity(users, products, orders).map((activity, index) => (
-            <div key={index} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${activity.color}`}>
-                <activity.icon className={`w-4 h-4 ${activity.iconColor}`} />
+      {users.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+          <div className="space-y-3">
+            {getRecentActivity(users, products, orders).map((activity, index) => (
+              <div key={index} className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${activity.color}`}>
+                  <activity.icon className={`w-4 h-4 ${activity.iconColor}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-900">{activity.message}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {format(new Date(activity.timestamp), 'MMM d, yyyy h:mm a')}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900">{activity.message}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {format(new Date(activity.timestamp), 'MMM d, yyyy h:mm a')}
-                </p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -238,10 +293,9 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
 function getRecentActivity(users: User[], products: Product[], orders: Order[]) {
   const activities: { message: string; timestamp: string; icon: typeof Users; color: string; iconColor: string }[] = [];
 
-  // Recent users
   users.slice(-3).forEach(user => {
     activities.push({
-      message: `${user.name} ${user.status === 'verified' ? 'was verified' : user.status === 'pending' ? 'signed up' : 'was banned'} as ${user.role}`,
+      message: `${user.name} ${user.status === 'verified' ? 'was verified' : user.status === 'pending' ? 'was added' : 'was banned'} as ${user.role}`,
       timestamp: user.updatedAt,
       icon: Users,
       color: user.status === 'verified' ? 'bg-green-100' : user.status === 'pending' ? 'bg-yellow-100' : 'bg-red-100',
@@ -249,7 +303,6 @@ function getRecentActivity(users: User[], products: Product[], orders: Order[]) 
     });
   });
 
-  // Recent products
   products.slice(-3).forEach(product => {
     activities.push({
       message: `Product "${product.title}" ${product.status === 'approved' ? 'was approved' : product.status === 'pending' ? 'is pending review' : 'was rejected'}`,
@@ -260,7 +313,6 @@ function getRecentActivity(users: User[], products: Product[], orders: Order[]) 
     });
   });
 
-  // Recent orders
   orders.slice(-3).forEach(order => {
     activities.push({
       message: `Order #${order.id.split('-')[1]} for "${order.productTitle}" is ${order.status}`,

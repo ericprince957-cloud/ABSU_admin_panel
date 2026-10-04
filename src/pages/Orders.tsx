@@ -13,6 +13,7 @@ import {
   Package,
 } from 'lucide-react';
 import { Order } from '../types';
+import { config } from '../lib/config';
 import { format } from 'date-fns';
 
 interface OrdersPageProps {
@@ -141,7 +142,7 @@ export default function OrdersPage({ orders, onUpdateOrder }: OrdersPageProps) {
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <p className="text-xs text-gray-500">Revenue (Delivered)</p>
-          <p className="text-xl font-bold text-green-600">₹{totalRevenue.toLocaleString()}</p>
+          <p className="text-xl font-bold text-green-600">{config.currency}{totalRevenue.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <p className="text-xs text-gray-500">Pending</p>
@@ -239,7 +240,7 @@ export default function OrdersPage({ orders, onUpdateOrder }: OrdersPageProps) {
                         <p className="text-sm text-gray-700">{order.sellerName}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-semibold text-gray-900">₹{order.totalPrice}</p>
+                        <p className="text-sm font-semibold text-gray-900">{config.currency}{order.totalPrice.toLocaleString()}</p>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(order.status)}`}>
@@ -281,7 +282,7 @@ export default function OrdersPage({ orders, onUpdateOrder }: OrdersPageProps) {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-gray-900">₹{order.totalPrice}</p>
+                      <p className="text-sm font-semibold text-gray-900">{config.currency}{order.totalPrice.toLocaleString()}</p>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(order.status)}`}>
                         {order.status}
                       </span>
@@ -324,7 +325,7 @@ export default function OrdersPage({ orders, onUpdateOrder }: OrdersPageProps) {
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500">Amount</p>
-                  <p className="text-sm font-semibold text-gray-900">₹{viewOrder.totalPrice}</p>
+                  <p className="text-sm font-semibold text-gray-900">{config.currency}{viewOrder.totalPrice.toLocaleString()}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500">Buyer</p>

@@ -12,17 +12,21 @@ import {
   Eye,
   CheckSquare,
   Square,
+  Plus,
 } from 'lucide-react';
-import { Product } from '../types';
+import { Product, User } from '../types';
+import { addProduct } from '../lib/db';
 import { format } from 'date-fns';
 
 interface ProductsPageProps {
   products: Product[];
+  sellers: User[];
   onUpdateProduct: (id: string, updates: Partial<Product>) => void;
   onDeleteProduct: (id: string) => void;
+  onRefresh: () => void;
 }
 
-export default function ProductsPage({ products, onUpdateProduct, onDeleteProduct }: ProductsPageProps) {
+export default function ProductsPage({ products, sellers, onUpdateProduct, onDeleteProduct, onRefresh }: ProductsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -30,6 +34,7 @@ export default function ProductsPage({ products, onUpdateProduct, onDeleteProduc
   const [actionMenu, setActionMenu] = useState<string | null>(null);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const categories = [...new Set(products.map(p => p.category))];
 
@@ -121,6 +126,29 @@ export default function ProductsPage({ products, onUpdateProduct, onDeleteProduc
     setSelectedProducts(new Set());
   };
 
+  const handleAddProduct = (productData: Partial<Product>) => {
+    const now = new Date().toISOString();
+    const seller = sellers.find(s => s.id === productData.sellerId);
+    const newProduct: Product = {
+      id: `prod-${Date.now()}`,
+      sellerId: productData.sellerId || '',
+      sellerName: seller?.storeName || seller?.name || '',
+      title: productData.title || '',
+      description: productData.description || '',
+      price: productData.price || 0,
+      category: productData.category || 'Other',
+      images: [],
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
+      stock: productData.stock || 1,
+      condition: (productData.condition as 'new' | 'used' | 'refurbished') || 'new',
+    };
+    addProduct(newProduct);
+    onRefresh();
+    setShowAddModal(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -129,11 +157,12 @@ export default function ProductsPage({ products, onUpdateProduct, onDeleteProduc
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
           <p className="text-gray-500 mt-1">Review and manage product listings</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">
-            {products.filter(p => p.status === 'pending').length} pending
-          </span>
-        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors shadow-sm"
+        >
+          <Plus className="w-4 h-4" /> Add Product
+        </button>
       </div>
 
       {/* Filters */}
@@ -205,9 +234,18 @@ export default function ProductsPage({ products, onUpdateProduct, onDeleteProduc
       {/* Products Grid */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No products found</p>
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="w-8 h-8 text-gray-300" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No products yet</h3>
+            <p className="text-gray-500 text-sm mb-4">Add your first product to get started</p>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add Product
+            </button>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -254,7 +292,7 @@ export default function ProductsPage({ products, onUpdateProduct, onDeleteProduc
                     </div>
                     <p className="text-sm text-gray-500 mt-1 line-clamp-1">{product.description}</p>
                     <div className="flex items-center gap-4 mt-2 flex-wrap">
-                      <span className="text-sm font-semibold text-orange-600">₹{product.price}</span>
+                      <span className="text-sm font-semibold text-orange-600">₦{product.price.toLocaleString()}</span>
                       <span className="text-xs text-gray-500">
                         Seller: {product.sellerName}
                       </span>
@@ -351,6 +389,15 @@ export default function ProductsPage({ products, onUpdateProduct, onDeleteProduc
         )}
       </div>
 
+      {/* Add Product Modal */}
+      {showAddModal && (
+        <AddProductModal
+          sellers={sellers}
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddProduct}
+        />
+      )}
+
       {/* View Product Modal */}
       {viewProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -373,7 +420,7 @@ export default function ProductsPage({ products, onUpdateProduct, onDeleteProduc
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500">Price</p>
-                  <p className="text-sm font-semibold text-gray-900">₹{viewProduct.price}</p>
+                  <p className="text-sm font-semibold text-gray-900">₦{viewProduct.price.toLocaleString()}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs text-gray-500">Stock</p>
@@ -454,6 +501,206 @@ export default function ProductsPage({ products, onUpdateProduct, onDeleteProduc
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Add Product Modal
+function AddProductModal({ sellers, onClose, onSave }: {
+  sellers: User[];
+  onClose: () => void;
+  onSave: (data: Partial<Product>) => void;
+}) {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    price: '',
+    category: '',
+    stock: '1',
+    condition: 'new' as 'new' | 'used' | 'refurbished',
+    sellerId: sellers.length > 0 ? sellers[0].id : '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.title.trim()) newErrors.title = 'Title is required';
+    if (!formData.description.trim()) newErrors.description = 'Description is required';
+    if (!formData.price || Number(formData.price) <= 0) newErrors.price = 'Valid price is required';
+    if (!formData.category.trim()) newErrors.category = 'Category is required';
+    if (!formData.sellerId) newErrors.sellerId = 'Please select a seller';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validate()) {
+      onSave({
+        ...formData,
+        price: Number(formData.price),
+        stock: Number(formData.stock) || 1,
+      });
+    }
+  };
+
+  if (sellers.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="bg-white rounded-xl p-6 max-w-md w-full text-center">
+          <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Sellers Yet</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            You need to add a seller first before adding products. Go to the People page to add sellers.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Add New Product</h3>
+            <p className="text-sm text-gray-500 mt-0.5">Fill in the product details</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Seller */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Seller *</label>
+            <select
+              value={formData.sellerId}
+              onChange={(e) => setFormData({ ...formData, sellerId: e.target.value })}
+              className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.sellerId ? 'border-red-300' : 'border-gray-200'
+              }`}
+            >
+              <option value="">Select a seller</option>
+              {sellers.map(seller => (
+                <option key={seller.id} value={seller.id}>
+                  {seller.storeName || seller.name}
+                </option>
+              ))}
+            </select>
+            {errors.sellerId && <p className="text-xs text-red-500 mt-1">{errors.sellerId}</p>}
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Product Title *</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              placeholder="e.g. Wireless Bluetooth Earbuds"
+              className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                errors.title ? 'border-red-300' : 'border-gray-200'
+              }`}
+            />
+            {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title}</p>}
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+              placeholder="Describe the product..."
+              className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none ${
+                errors.description ? 'border-red-300' : 'border-gray-200'
+              }`}
+            />
+            {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
+          </div>
+
+          {/* Price & Stock */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦) *</label>
+              <input
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                placeholder="0"
+                min="0"
+                className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                  errors.price ? 'border-red-300' : 'border-gray-200'
+                }`}
+              />
+              {errors.price && <p className="text-xs text-red-500 mt-1">{errors.price}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+              <input
+                type="number"
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                placeholder="1"
+                min="1"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+          </div>
+
+          {/* Category & Condition */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+              <input
+                type="text"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                placeholder="e.g. Electronics, Books"
+                className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                  errors.category ? 'border-red-300' : 'border-gray-200'
+                }`}
+              />
+              {errors.category && <p className="text-xs text-red-500 mt-1">{errors.category}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+              <select
+                value={formData.condition}
+                onChange={(e) => setFormData({ ...formData, condition: e.target.value as 'new' | 'used' | 'refurbished' })}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="new">New</option>
+                <option value="used">Used</option>
+                <option value="refurbished">Refurbished</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600"
+          >
+            Add Product
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

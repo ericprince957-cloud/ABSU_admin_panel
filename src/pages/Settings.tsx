@@ -67,7 +67,7 @@ export default function SettingsPage({ onRefresh }: SettingsPageProps) {
           </div>
           <div className="p-3 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-500">Currency</p>
-            <p className="text-sm font-semibold text-gray-900">{config.currency} (INR)</p>
+            <p className="text-sm font-semibold text-gray-900">{config.currency} ({config.currencyCode})</p>
           </div>
           <div className="p-3 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-500">WhatsApp Checkout</p>
