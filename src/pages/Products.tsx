@@ -15,18 +15,18 @@ import {
   Plus,
 } from 'lucide-react';
 import { Product, User } from '../types';
-import { addProduct } from '../lib/db';
 import { format } from 'date-fns';
 
 interface ProductsPageProps {
   products: Product[];
   sellers: User[];
-  onUpdateProduct: (id: string, updates: Partial<Product>) => void;
-  onDeleteProduct: (id: string) => void;
-  onRefresh: () => void;
+  onUpdateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
+  onDeleteProduct: (id: string) => Promise<void>;
+  onAddProduct: (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onRefresh: () => Promise<void>;
 }
 
-export default function ProductsPage({ products, sellers, onUpdateProduct, onDeleteProduct, onRefresh }: ProductsPageProps) {
+export default function ProductsPage({ products, sellers, onUpdateProduct, onDeleteProduct, onAddProduct, onRefresh }: ProductsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -126,11 +126,9 @@ export default function ProductsPage({ products, sellers, onUpdateProduct, onDel
     setSelectedProducts(new Set());
   };
 
-  const handleAddProduct = (productData: Partial<Product>) => {
-    const now = new Date().toISOString();
+  const handleAddProduct = async (productData: Partial<Product>) => {
     const seller = sellers.find(s => s.id === productData.sellerId);
-    const newProduct: Product = {
-      id: `prod-${Date.now()}`,
+    const newProduct: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
       sellerId: productData.sellerId || '',
       sellerName: seller?.storeName || seller?.name || '',
       title: productData.title || '',
@@ -139,13 +137,10 @@ export default function ProductsPage({ products, sellers, onUpdateProduct, onDel
       category: productData.category || 'Other',
       images: [],
       status: 'pending',
-      createdAt: now,
-      updatedAt: now,
       stock: productData.stock || 1,
       condition: (productData.condition as 'new' | 'used' | 'refurbished') || 'new',
     };
-    addProduct(newProduct);
-    onRefresh();
+    await onAddProduct(newProduct);
     setShowAddModal(false);
   };
 
