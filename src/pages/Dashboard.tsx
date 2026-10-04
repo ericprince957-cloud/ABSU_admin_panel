@@ -106,7 +106,7 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 mt-1">Welcome to {config.siteName} Admin Panel</p>
+          <p className="text-gray-500 mt-1">Welcome to your Admin Panel</p>
         </div>
 
         {/* Empty State */}
@@ -116,7 +116,7 @@ export default function Dashboard({ stats, users, products, orders }: DashboardP
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Let's get started!</h2>
           <p className="text-gray-500 max-w-md mx-auto mb-6">
-            Your admin panel is ready. Start by adding people (sellers and students) to your marketplace.
+            Start by adding people to your platform.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
