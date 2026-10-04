@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
-import SellersPage from './pages/Sellers';
+import UsersPage from './pages/Users';
 import ProductsPage from './pages/Products';
-import OrdersPage from './pages/Orders';
+import InquiriesPage from './pages/Inquiries';
 import SettingsPage from './pages/Settings';
 import LoginScreen from './components/LoginScreen';
-import { Page, User, Product, Order, DashboardStats } from './types';
-import { getUsers, getProducts, getOrders, getDashboardStats, updateUser, deleteUser, updateProduct, deleteProduct, updateOrder, deleteOrder, addUser, addProduct } from './lib/db';
+import { Page, User, Product, Inquiry, DashboardStats } from './types';
+import { getUsers, getProducts, getInquiries, getDashboardStats, updateUser, deleteUser, updateProduct, deleteProduct, updateInquiry, deleteInquiry, addUser, addProduct } from './lib/db';
 import { isSupabaseConfigured } from './lib/supabase';
 
 const ADMIN_PASSWORD = 'eric123$';
@@ -17,69 +17,53 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 0,
-    totalSellers: 0,
-    totalProducts: 0,
-    totalOrders: 0,
-    pendingSellers: 0,
-    pendingProducts: 0,
-    revenue: 0,
-    activeOrders: 0,
-  });
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({ users: 0, products: 0, inquiries: 0 });
   const [loading, setLoading] = useState(true);
 
-  // Check authentication on mount
   useEffect(() => {
-    // Check URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const urlPassword = urlParams.get('password');
     
     if (urlPassword === ADMIN_PASSWORD) {
-      // Valid password in URL - authenticate and clean URL
       sessionStorage.setItem('admin_authenticated', 'true');
       setIsAuthenticated(true);
-      // Remove password from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (sessionStorage.getItem('admin_authenticated') === 'true') {
-      // Already authenticated in this session
       setIsAuthenticated(true);
     }
   }, []);
 
   const refreshData = useCallback(async () => {
     setLoading(true);
-    const [usersData, productsData, ordersData, statsData] = await Promise.all([
+    const [usersData, productsData, inquiriesData, statsData] = await Promise.all([
       getUsers(),
       getProducts(),
-      getOrders(),
+      getInquiries(),
       getDashboardStats(),
     ]);
     setUsers(usersData);
     setProducts(productsData);
-    setOrders(ordersData);
+    setInquiries(inquiriesData);
     setStats(statsData);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    if (isAuthenticated) refreshData();
+  }, [isAuthenticated, refreshData]);
 
-  const sellers = users.filter(u => u.role === 'seller');
-
-  const handleUpdateSeller = async (id: string, updates: Partial<User>) => {
+  const handleUpdateUser = async (id: string, updates: Partial<User>) => {
     await updateUser(id, updates);
     await refreshData();
   };
 
-  const handleDeleteSeller = async (id: string) => {
+  const handleDeleteUser = async (id: string) => {
     await deleteUser(id);
     await refreshData();
   };
 
-  const handleAddUser = async (userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddUser = async (userData: Partial<User>) => {
     await addUser(userData);
     await refreshData();
   };
@@ -94,73 +78,23 @@ export default function App() {
     await refreshData();
   };
 
-  const handleAddProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddProduct = async (productData: Partial<Product>) => {
     await addProduct(productData);
     await refreshData();
   };
 
-  const handleUpdateOrder = async (id: string, updates: Partial<Order>) => {
-    await updateOrder(id, updates);
+  const handleUpdateInquiry = async (id: string, updates: Partial<Inquiry>) => {
+    await updateInquiry(id, updates);
     await refreshData();
   };
 
-  const handleClearAllData = async () => {
-    // Delete all orders first (has foreign key constraints)
-    for (const order of orders) {
-      await deleteOrder(order.id);
-    }
-    // Then products
-    for (const product of products) {
-      await deleteProduct(product.id);
-    }
-    // Then users
-    for (const user of users) {
-      await deleteUser(user.id);
-    }
+  const handleDeleteInquiry = async (id: string) => {
+    await deleteInquiry(id);
     await refreshData();
   };
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard stats={stats} users={users} products={products} orders={orders} />;
-      case 'sellers':
-        return (
-          <SellersPage
-            sellers={sellers}
-            allUsers={users}
-            onUpdateSeller={handleUpdateSeller}
-            onDeleteSeller={handleDeleteSeller}
-            onAddUser={handleAddUser}
-            onRefresh={refreshData}
-          />
-        );
-      case 'products':
-        return (
-          <ProductsPage
-            products={products}
-            sellers={sellers}
-            onUpdateProduct={handleUpdateProduct}
-            onDeleteProduct={handleDeleteProduct}
-            onAddProduct={handleAddProduct}
-            onRefresh={refreshData}
-          />
-        );
-      case 'orders':
-        return (
-          <OrdersPage
-            orders={orders}
-            onUpdateOrder={handleUpdateOrder}
-          />
-        );
-      case 'settings':
-        return <SettingsPage onRefresh={refreshData} onClearAll={handleClearAllData} />;
-      default:
-        return <Dashboard stats={stats} users={users} products={products} orders={orders} />;
-    }
-  };
+  const newInquiries = inquiries.filter(i => i.status === 'new').length;
 
-  // Show login screen if not authenticated
   if (!isAuthenticated) {
     return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
   }
@@ -176,20 +110,32 @@ export default function App() {
     );
   }
 
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard stats={stats} products={products} inquiries={inquiries} />;
+      case 'users':
+        return <UsersPage users={users} onUpdateUser={handleUpdateUser} onDeleteUser={handleDeleteUser} onAddUser={handleAddUser} onRefresh={refreshData} />;
+      case 'products':
+        return <ProductsPage products={products} onUpdateProduct={handleUpdateProduct} onDeleteProduct={handleDeleteProduct} onAddProduct={handleAddProduct} onRefresh={refreshData} />;
+      case 'inquiries':
+        return <InquiriesPage inquiries={inquiries} onUpdateInquiry={handleUpdateInquiry} onDeleteInquiry={handleDeleteInquiry} />;
+      case 'settings':
+        return <SettingsPage onRefresh={refreshData} />;
+      default:
+        return <Dashboard stats={stats} products={products} inquiries={inquiries} />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar
-        currentPage={currentPage}
-        onNavigate={setCurrentPage}
-        pendingSellers={stats.pendingSellers}
-        pendingProducts={stats.pendingProducts}
-      />
+      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} newInquiries={newInquiries} />
       <main className="flex-1 lg:ml-0 pt-14 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
           {!isSupabaseConfigured() && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
-                <strong>⚠️ Supabase not configured.</strong> Please set up your Supabase credentials in the .env file. See SETUP_GUIDE.md for instructions.
+                <strong>⚠️ Supabase not configured.</strong> Create a .env file with VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. See SETUP_GUIDE.md.
               </p>
             </div>
           )}
